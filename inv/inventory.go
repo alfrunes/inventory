@@ -16,6 +16,7 @@ package inv
 import (
 	"context"
 	"time"
+	"encoding/json"
 
 	"github.com/pkg/errors"
 
@@ -38,6 +39,7 @@ type InventoryApp interface {
 	GetDeviceGroup(ctx context.Context, id model.DeviceID) (model.GroupName, error)
 	DeleteDevice(ctx context.Context, id model.DeviceID) error
 	CreateTenant(ctx context.Context, tenant model.NewTenant) error
+	GetAllAttributeNames(ctx context.Context) ([]string, error)
 }
 
 type inventory struct {
@@ -64,6 +66,44 @@ func (i *inventory) GetDevice(ctx context.Context, id model.DeviceID) (*model.De
 		return nil, errors.Wrap(err, "failed to fetch device")
 	}
 	return dev, nil
+}
+
+func (i *inventory) GetAllAttributeNames(ctx context.Context) ([]string, error) {
+	attrs, err := i.db.GetAllAttributeNames(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to retrieve all "
+			"attributes from database")
+	}
+
+	// Create map of all attribute names to be parsed to JSON in response
+	var attrs_map map[string]interface{}
+	attrs_map = make(map[string]interface{})
+	for _, attr := range attrs {
+		scope_attr := strings.Split(attr, "-")
+		if len(scope_attr) < 2 {
+			// No scopes - default to `inventory` scope
+			if val, ok := attrs_map["inventory"]; ok {
+				attrs_map["inventory"] = []string{}
+			}
+			attrs_map["inventory"].append(scope_attr)
+		} else {
+			// Trying to be generic, enabling possibility of nested
+			// scopes in the future.
+			tmp := attrs_map
+			for i := 0; i < len(scope_attr)-1; i++ {
+				if val, ok := tmp[scope_attr[i]]; !ok {
+					tmp[scope_attr[i]] = make(map[string]interface{})
+				}
+				tmp = tmp[scope_attr[i]].(map[string]interface{})
+			}
+			// Finally: conditionally add the attribute name
+			if val, ok := tmp[scope_attr[len(scope_attr)-1]]; !ok {
+				tmp[scope_attr[len(scope_attr)-1]] = scope_attr[len(scope_attr)-1]
+			}
+		}
+	}
+
+	return attrs_map, err
 }
 
 func (i *inventory) AddDevice(ctx context.Context, dev *model.Device) error {
@@ -172,3 +212,4 @@ func (i *inventory) CreateTenant(ctx context.Context, tenant model.NewTenant) er
 	}
 	return nil
 }
+

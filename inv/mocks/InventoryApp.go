@@ -66,6 +66,27 @@ func (_m *InventoryApp) DeleteDevice(ctx context.Context, id model.DeviceID) err
 	return r0
 }
 
+// GetAllAttributeNames provides a mock function with given field: ctx
+func (_m *InventoryApp) GetAllAttributeNames(ctx context.Context) ([]string, error) {
+	ret := _m.Called(ctx)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context) []string); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetDevice provides a mock function with given fields: ctx, id
 func (_m *InventoryApp) GetDevice(ctx context.Context, id model.DeviceID) (*model.Device, error) {
 	ret := _m.Called(ctx, id)

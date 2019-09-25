@@ -45,6 +45,8 @@ const (
 	uriGroups        = "/api/0.1.0/groups"
 	uriGroupsDevices = "/api/0.1.0/groups/:name/devices"
 
+	uriAttributeNames = "/api/management/v2/inventory/attributes/names"
+
 	uriInternalTenants = "/api/internal/v1/inventory/tenants"
 	uriInternalDevices = "/api/internal/v1/inventory/devices"
 
@@ -100,6 +102,8 @@ func (i *inventoryHandlers) GetApp() (rest.App, error) {
 		rest.Get(uriDeviceGroups, i.GetDeviceGroupHandler),
 		rest.Get(uriGroups, i.GetGroupsHandler),
 		rest.Get(uriGroupsDevices, i.GetDevicesByGroup),
+
+		rest.Get(uriAttributeNames, i.GetDeviceAttributesHandler),
 
 		rest.Post(uriInternalTenants, i.CreateTenantHandler),
 		rest.Post(uriInternalDevices, i.AddDeviceHandler),
@@ -523,6 +527,22 @@ func parseAttributes(r *rest.Request) (model.DeviceAttributes, error) {
 	}
 
 	return attrs, nil
+}
+
+
+func (i *inventoryHandlers) GetDeviceAttributesHandler(w rest.ResponseWriter, r *rest.Request) {
+	ctx := r.Context()
+
+	l := log.FromContext(ctx)
+
+	attrs, err := i.inventory.GetAllAttributeNames(ctx)
+
+	if err != nil {
+		u.RestErrWithLogInternal(w, r, l, err)
+		return
+	}
+
+	w.WriteJson(attrs)
 }
 
 func (i *inventoryHandlers) GetGroupsHandler(w rest.ResponseWriter, r *rest.Request) {
